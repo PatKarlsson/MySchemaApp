@@ -160,6 +160,12 @@ namespace MySchemaApp
 
                 string url = Console.ReadLine().Trim();
                 if (url == "0") return; //Back to main menu.
+
+                if (url.Contains("startDatum=idag"))
+                {
+                   url = await Printer.AutoSetUrlStartDate(url);
+                }
+
                 if (schemas.Any(s => s.Url == url)) //Controls for duplicates.
                 {
                     Console.WriteLine("Det finns redan ett schema med den URL:en, försök igen.");
