@@ -28,38 +28,38 @@ namespace MySchemaApp
             return cleanText.Trim();
         }
 
-        static public DateTime ParseDate(string dayAndDate)
-        {
-            // Parses a date like 19 aug and return a DateTime object.
+        //static public DateTime ParseDate(string dayAndDate)
+        //{
+        //    // Parses a date like 19 aug and return a DateTime object.
 
-            int dummyYear = DateTime.Now.Year; // Won't be displayed, just needed for parsing.
+        //    int dummyYear = DateTime.Now.Year; // Won't be displayed, just needed for parsing.
 
-            // Jan didn't work for swedish culture (it wants jan), Maj didn't work for english culture (it wants May), so I'm using both.
-            var cultures = new[]
-            {
-                new CultureInfo("sv-SE"), // Swedish
-                new CultureInfo("en-US")  // English
-            };
+        //    // Jan didn't work for swedish culture (it wants jan), Maj didn't work for english culture (it wants May), so I'm using both.
+        //    var cultures = new[]
+        //    {
+        //        new CultureInfo("sv-SE"), // Swedish
+        //        new CultureInfo("en-US")  // English
+        //    };
 
-            foreach (var culture in cultures)
-            {
-                if (DateTime.TryParseExact(dayAndDate + " " + dummyYear, "d MMM yyyy", culture, DateTimeStyles.None, out DateTime dt)) return dt;
-            }
-            throw new FormatException($"Unable to parse date: {dayAndDate}");
-        }
+        //    foreach (var culture in cultures)
+        //    {
+        //        if (DateTime.TryParseExact(dayAndDate + " " + dummyYear, "d MMM yyyy", culture, DateTimeStyles.None, out DateTime dt)) return dt;
+        //    }
+        //    throw new FormatException($"Unable to parse date: {dayAndDate}");
+        //}
 
         static public void CustomPrintTable(HtmlNodeCollection rows)
         {
             if (rows == null) return;
 
             string day = "";
-            DateTime date = new DateTime();
+            string lastDate = "";
 
             foreach (var row in rows)
             {
                 var cells = row.SelectNodes("td");
                 if (cells == null) continue;
-                CustomPrintTableRowData(cells, day, date);
+                CustomPrintTableRowData(cells, day, lastDate);
 
                 // Tracks current day and date in case of empty cells. Can happen
                 // due to two or more consecutive lessons on the same day.
@@ -67,7 +67,7 @@ namespace MySchemaApp
                 // | Mån | 19 aug | 08:00 | 10:00 | Matematik | IK205G | 
                 //|     |        | 10:00 | 12:00 | Matematik | IK205G |
                 if (cells.Count > 1 && !string.IsNullOrEmpty(CleanText(cells[0].InnerText))) day = CleanText(cells[0].InnerText);
-                if (cells.Count > 1 && !string.IsNullOrEmpty(CleanText(cells[1].InnerText))) date = ParseDate(CleanText(cells[1].InnerText));
+                if (cells.Count > 1 && !string.IsNullOrEmpty(CleanText(cells[1].InnerText))) lastDate = CleanText(cells[1].InnerText);
             }
         }
 
@@ -82,7 +82,7 @@ namespace MySchemaApp
             }
         }
 
-        static public void CustomPrintTableRowData(HtmlNodeCollection cells, string lastDay, DateTime lastDate)
+        static public void CustomPrintTableRowData(HtmlNodeCollection cells, string lastDay, string lastDate)
         {
             // Takes the row and and only shows what I want to have
             // displayed. I don't care much for who the day's teacher might be.
@@ -97,7 +97,7 @@ namespace MySchemaApp
             // Bigger explanation in CustomPrintTable(HtmlNodeCollection rows).
             // TLDR: applies value when there are none.
             if (string.IsNullOrEmpty(CleanText(cells[1].InnerText))) cells[1].InnerHtml = lastDay;
-            if (string.IsNullOrEmpty(CleanText(cells[2].InnerText))) cells[2].InnerHtml = lastDate.ToString("d MMM"); // "1 Jan". 5 Maj -> 5 May because of culture issues. Low prio bug.
+            if (string.IsNullOrEmpty(CleanText(cells[2].InnerText))) cells[2].InnerHtml = lastDate;
 
             // Calls attention to groups.
             if (!string.IsNullOrEmpty(CleanText(cells[5].InnerText))) cells[5].InnerHtml = "*GRUPP " + CleanText(cells[5].InnerText + "*");
@@ -134,7 +134,7 @@ namespace MySchemaApp
 
         static public async Task<string> AutoSetUrlStartDate(string currentUrl)
         {
-            //This method is only run when the user has not set a start date in the url. In this case 
+            //This method only runs when the user has not set a start date in the url. In this case 
             //we want it to default to whenever the first lesson of the chosen course is scheduled. The solution for this
             //therefore became to check the number of rows the url would have returned and compare it to the number of rows
             //the same url 7 days prior would have returned and return the url with the most rows. This is based on
